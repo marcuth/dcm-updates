@@ -6,14 +6,8 @@ import { AllEventsResponse, Event } from "./interfaces/all-events"
 import { toTitleCase } from "./utils/to-title-case"
 import { fetchDitelp } from "./utils/fetch-ditlep"
 import { config } from "./config"
-
-/*
-enum EventType {
-    FogIslands = 1,
-    HeroicRaces = 4,
-    MazeIslands = 5
-}
-*/
+import { sendDiscordMessage } from "./utils/discord"
+import { formatWithLocale } from "./utils/format-date"
 
 function filterTodayEvents(events: Event[]) {
     const today = new Date()
@@ -48,6 +42,51 @@ function normalizeEvents(events: Event[], ditlepLocalization: LocalizationObject
     })
 }
 
+function createEventMessage(event: any, lang: "br" | "en" | "es") {
+    const startDate = new Date(event.startAt)
+    const endDate = new Date(event.endAt)
+    const duration = dateFns.differenceInCalendarDays(endDate, startDate)
+
+    const labels = {
+        br: {
+            alert: "🇧🇷 | Atenção! O evento",
+            starts: "começa hoje!",
+            period: "📅 Período",
+            duration: "⌛ Duração",
+            days: "dias",
+            at: "às",
+            until: "até"
+        },
+        en: {
+            alert: "🇺🇸 | Attention! The event",
+            starts: "starts today!",
+            period: "📅 Period",
+            duration: "⌛ Duration",
+            days: "days",
+            at: "at",
+            until: "until"
+        },
+        es: {
+            alert: "🇪🇸 | ¡Atención! El evento",
+            starts: "comienza hoy!",
+            period: "📅 Período",
+            duration: "⌛ Duración",
+            days: "días",
+            at: "a las",
+            until: "hasta"
+        }
+    }
+
+    const l = labels[lang] || labels.br
+
+    const dateFormat = lang === 'en' ? `MM-dd '${l.at}' HH:mm` : `dd-MM '${l.at}' HH:mm`
+
+    const formattedStartDate = formatWithLocale(startDate, dateFormat, lang)
+    const formattedEndDate = formatWithLocale(endDate, dateFormat, lang)
+
+    return `${l.alert} *${event.title}* ${l.starts}\n\n${l.period}: ${formattedStartDate} ${l.until} ${formattedEndDate}\n${l.duration}: ${duration} ${l.days}`
+}
+
 async function main() {
     const bot = new Telegraf(config.telegram.botToken)
 
@@ -56,22 +95,56 @@ async function main() {
         method: "POST"
     })
 
-    const ditlepLocalization = await fetchLocalization(config.localization.ditlepLanguage)
-    const localization = await fetchLocalization(config.localization.language)
+    const locBR = await fetchLocalization("br")
+    const locEN = await fetchLocalization("en")
+    const locES = await fetchLocalization("es")
+    const ditlepLoc = await fetchLocalization(config.localization.ditlepLanguage)
+
     const allEvents = data.currentEvents.concat(data.upcomingEvents).map((event, index) => ({ ...event, index }))
     const todayEvents = filterTodayEvents(allEvents)
-    const normalizedEvents = normalizeEvents(todayEvents, ditlepLocalization, localization)
 
-    for (const event of normalizedEvents) {
-        const formattedStartDate = dateFns.format(new Date(event.startAt), "dd-MM 'às' HH:mm")
-        const formattedEndDate = dateFns.format(new Date(event.endAt), "dd-MM 'às' HH:mm")
-        const duration = dateFns.differenceInCalendarDays(new Date(event.endAt), new Date(event.startAt))
+    const eventsBR = normalizeEvents(todayEvents, ditlepLoc, locBR)
+    const eventsEN = normalizeEvents(todayEvents, ditlepLoc, locEN)
+    const eventsES = normalizeEvents(todayEvents, ditlepLoc, locES)
 
-        const message = `🇧🇷 | Atenção! O evento *${event.title}* começa hoje!\n\n📅 Período: ${formattedStartDate} até ${formattedEndDate}  \n⌛ Duração: ${duration} dias`
+    for (let i = 0; i < eventsBR.length; i++) {
+        const eBR = eventsBR[i]
+        const eEN = eventsEN[i]
+        const eES = eventsES[i]
 
-        await bot.telegram.sendMessage(config.telegram.updatesChannelId, message, {
-            parse_mode: "Markdown",
-        })
+        const msgBR = createEventMessage(eBR, "br")
+        const msgEN = createEventMessage(eEN, "en")
+        const msgES = createEventMessage(eES, "es")
+
+        const telegramMessages = [msgBR, msgEN, msgES]
+
+        const shouldShowDonateButtons = Math.random() < 0.2
+
+        for (const msg of telegramMessages) {
+            await bot.telegram.sendMessage(config.telegram.updatesChannelId, msg, {
+                parse_mode: "Markdown",
+                reply_markup: shouldShowDonateButtons ? {
+                    inline_keyboard: [
+                        [
+                            { text: "☕️ Doe via Buy me a Coffe", url: "https://buymeacoffee.com/marcuth" }
+                        ],
+                        [
+                            { text: "❤️ Doe via Ko-fi", url: "https://ko-fi.com/marcuth" }
+                        ],
+                        [
+                            { text: "💠 Doe via Livepix", url: "https://livepix.gg/marcuth" }
+                        ]
+                    ]
+                } : undefined
+            })
+        }
+
+        await sendDiscordMessage(
+            config.discord.islandsWebhookUrl,
+            [msgBR, msgEN, msgES],
+            ["Novo Evento Iniciado!", "New Event Started!", "¡Nuevo Evento Iniciado!"],
+            "<@&1472666734031929425>"
+        )
     }
 }
 

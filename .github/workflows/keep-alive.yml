@@ -1,0 +1,28 @@
+name: Keep Alive Activity
+
+on:
+  schedule:
+    - cron: '0 0 1 * *' # Roda uma vez por mês no dia 1
+  workflow_dispatch:      # Permite execução manual
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update .keep file
+        run: |
+          echo "Keep alive file for GitHub Actions activity." > .keep
+          echo "Last updated: $(date -u)" >> .keep
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .keep
+          git commit -m "chore: update .keep to keep actions alive [skip ci]" || echo "No changes to commit"
+          git push

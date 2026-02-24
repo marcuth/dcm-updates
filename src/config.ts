@@ -12,5 +12,9 @@ export const config = {
     localization: {
         language: "br",
         ditlepLanguage: "en"
+    },
+    discord: {
+        allianceChestsWebhookUrl: env("ALLIANCE_CHESTS_WEBHOOK_URL"),
+        islandsWebhookUrl: env("ISLANDS_WEBHOOK_URL"),
     }
 }

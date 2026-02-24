@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -30,3 +30,5 @@ jobs:
           DITLEP_ENCRYPTION_KEY: ${{ secrets.DITLEP_ENCRYPTION_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_UPDATES_CHANNEL_ID: ${{ secrets.TELEGRAM_UPDATES_CHANNEL_ID }}
+          ALLIANCE_CHESTS_WEBHOOK_URL: ${{ secrets.ALLIANCE_CHESTS_WEBHOOK_URL }}
+          ISLANDS_WEBHOOK_URL: ${{ secrets.ISLANDS_WEBHOOK_URL }}
