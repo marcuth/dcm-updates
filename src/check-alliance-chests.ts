@@ -16,7 +16,13 @@ function findTodayAllianceChest(data: AllianceChestResponse) {
         const rangeStartDate = new Date(range.start)
         const rangeEndDate = new Date(range.end)
 
-        if (dateFns.isWithinInterval(today, { start: rangeStartDate, end: rangeEndDate })) {
+        const rangeAcceptableStart = new Date(rangeStartDate)
+        rangeAcceptableStart.setHours(0, 0, 0, 0)
+
+        const rangeAcceptableEnd = new Date(rangeAcceptableStart)
+        rangeAcceptableEnd.setDate(rangeAcceptableEnd.getDate() + 1)
+
+        if (dateFns.isWithinInterval(today, { start: rangeStartDate, end: rangeAcceptableEnd })) {
             return {
                 id: String(range.chestId),
                 startAt: rangeStartDate.toISOString(),
@@ -253,9 +259,6 @@ async function main() {
                         ],
                         [
                             { text: "💠 Livepix", url: "https://livepix.gg/marcuth" }
-                        ],
-                        [
-                            { text: "🐱 GitHub Sponsors", url: "https://github.com/sponsors/marcuth" }
                         ]
                     ]
                 } : undefined

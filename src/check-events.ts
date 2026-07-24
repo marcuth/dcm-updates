@@ -133,9 +133,6 @@ async function main() {
                         ],
                         [
                             { text: "💠 Doe via Livepix", url: "https://livepix.gg/marcuth" }
-                        ],
-                        [
-                            { text: "🐱 GitHub Sponsors", url: "https://github.com/sponsors/marcuth" }
                         ]
                     ]
                 } : undefined
